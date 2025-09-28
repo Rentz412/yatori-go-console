@@ -5,11 +5,6 @@ import (
 	"strings"
 	"sync"
 	"yatori-go-console/config"
-	"yatori-go-console/logic/cqie"
-	"yatori-go-console/logic/enaea"
-	"yatori-go-console/logic/ketangx"
-	"yatori-go-console/logic/welearn"
-	"yatori-go-console/logic/xuexitong"
 	"yatori-go-console/logic/yinghua"
 	utils2 "yatori-go-console/utils"
 
@@ -115,16 +110,6 @@ func brushBlock(configData *config.JSONDataForConfig) {
 	//统一登录模块------------------------------------------------------------------
 	yingHuaAccount := yinghua.FilterAccount(configData)
 	yingHuaOperation := yinghua.UserLoginOperation(yingHuaAccount)
-	enaeaAccount := enaea.FilterAccount(configData)
-	enaeaOperation := enaea.UserLoginOperation(enaeaAccount)
-	cqieAccount := cqie.FilterAccount(configData)
-	cqieOpertation := cqie.UserLoginOperation(cqieAccount)
-	xueXiTongAccount := xuexitong.FilterAccount(configData)
-	xueXiTongOperation := xuexitong.UserLoginOperation(xueXiTongAccount)
-	ketangxAccount := ketangx.FilterAccount(configData)
-	ketangxOperation := ketangx.UserLoginOperation(ketangxAccount)
-	welearnAccount := welearn.FilterAccount(configData)
-	welearnOperation := welearn.UserLoginOperation(welearnAccount)
 
 	//统一刷课---------------------------------------------------------------------
 	//英华
@@ -133,35 +118,7 @@ func brushBlock(configData *config.JSONDataForConfig) {
 		yinghua.RunBrushOperation(configData.Setting, yingHuaAccount, yingHuaOperation) //英华统一刷课模块
 		platformLock.Done()
 	}()
-	//学习公社
-	platformLock.Add(1)
-	go func() {
-		enaea.RunBrushOperation(configData.Setting, enaeaAccount, enaeaOperation) //学习公社统一刷课模块
-		platformLock.Done()
-	}()
-	platformLock.Add(1)
-	go func() {
-		cqie.RunBrushOperation(configData.Setting, cqieAccount, cqieOpertation) //重庆工程学院CQIE刷课模块
-		platformLock.Done()
-	}()
-	//学习通
-	platformLock.Add(1)
-	go func() {
-		xuexitong.RunBrushOperation(configData.Setting, xueXiTongAccount, xueXiTongOperation) //英华统一刷课模块
-		platformLock.Done()
-	}()
-	//码上研训
-	platformLock.Add(1)
-	go func() {
-		ketangx.RunBrushOperation(configData.Setting, ketangxAccount, ketangxOperation) //码上研训统一刷课模块
-		platformLock.Done()
-	}()
-	//WeLearn
-	platformLock.Add(1)
-	go func() {
-		welearn.RunBrushOperation(configData.Setting, welearnAccount, welearnOperation) //码上研训统一刷课模块
-		platformLock.Done()
-	}()
+
 	platformLock.Wait()
 }
 
