@@ -54,12 +54,19 @@ type CoursesSettings struct {
 	IncludeExams []string `json:"includeExams" yaml:"includeExams"`
 	ExcludeExams []string `json:"excludeExams" yaml:"excludeExams"`
 }
+
+// 新增课程项结构体，支持课程ID和名称
+type CourseItem struct {
+	Name string `json:"name" yaml:"name"`
+	ID   string `json:"id" yaml:"id"`
+}
+
 type CoursesCustom struct {
 	VideoModel      int               `json:"videoModel" yaml:"videoModel"`         //观看视频模式
 	AutoExam        int               `json:"autoExam" yaml:"autoExam"`             //是否自动考试
 	ExamAutoSubmit  int               `json:"examAutoSubmit" yaml:"examAutoSubmit"` //是否自动提交试卷
-	ExcludeCourses  []string          `json:"excludeCourses" yaml:"excludeCourses"`
-	IncludeCourses  []string          `json:"includeCourses" yaml:"includeCourses"`
+	ExcludeCourses  []interface{}     `json:"excludeCourses" yaml:"excludeCourses"` // 改为interface{}以兼容新旧格式
+	IncludeCourses  []interface{}     `json:"includeCourses" yaml:"includeCourses"` // 改为interface{}以兼容新旧格式
 	CoursesSettings []CoursesSettings `json:"coursesSettings" yaml:"coursesSettings"`
 }
 type Users struct {
@@ -104,17 +111,66 @@ func ReadConfig(filePath string) JSONDataForConfig {
 		log2.Print(log2.INFO, log2.BoldRed, "配置文件读取失败，请检查配置文件填写是否正确")
 		log.Fatal(err)
 	}
+	
+	// 转换课程配置格式
+	for i := range configJson.Users {
+		user := &configJson.Users[i]
+		user.CoursesCustom.IncludeCourses = convertCourseFormat(user.CoursesCustom.IncludeCourses)
+		user.CoursesCustom.ExcludeCourses = convertCourseFormat(user.CoursesCustom.ExcludeCourses)
+	}
+	
 	return configJson
 }
 
-// CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
-func CmpCourse(course string, courseList []string) bool {
-	for i := range courseList {
-		if courseList[i] == course {
-			return true
+// 转换课程配置格式，将字符串数组转换为CourseItem数组
+func convertCourseFormat(courses []interface{}) []interface{} {
+	var result []interface{}
+	for _, course := range courses {
+		switch v := course.(type) {
+		case string:
+			// 旧格式：字符串，转换为CourseItem
+			result = append(result, CourseItem{Name: v, ID: ""})
+		case map[interface{}]interface{}:
+			// 新格式：对象，转换为CourseItem
+			name := ""
+			id := ""
+			if n, ok := v["name"].(string); ok {
+				name = n
+			}
+			if i, ok := v["id"].(string); ok {
+				id = i
+			}
+			result = append(result, CourseItem{Name: name, ID: id})
+		default:
+			// 其他格式，保持原样
+			result = append(result, course)
 		}
 	}
-	return false
+	return result
+}
+
+// CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
+// 修改为支持课程ID和名称的匹配
+func CmpCourse(courseName, courseId string, courseList []interface{}) bool {
+    for _, item := range courseList {
+        switch v := item.(type) {
+        case string:
+            // 旧格式：字符串，按名称匹配
+            if v == courseName {
+                return true
+            }
+        case CourseItem:
+            // 新格式：CourseItem，优先按ID匹配
+            if v.ID != "" && v.ID == courseId {
+                return true
+            }
+            // 如果没有配置ID或ID不匹配，则按名称匹配
+            if v.Name == courseName {
+                return true
+            }
+        }
+    }
+    return false
 }
 
 func GetUserInput(prompt string) string {
