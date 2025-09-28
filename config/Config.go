@@ -124,29 +124,37 @@ func ReadConfig(filePath string) JSONDataForConfig {
 
 // 转换课程配置格式，将字符串数组转换为CourseItem数组
 func convertCourseFormat(courses []interface{}) []interface{} {
-	var result []interface{}
-	for _, course := range courses {
-		switch v := course.(type) {
-		case string:
-			// 旧格式：字符串，转换为CourseItem
-			result = append(result, CourseItem{Name: v, ID: ""})
-		case map[interface{}]interface{}:
-			// 新格式：对象，转换为CourseItem
-			name := ""
-			id := ""
-			if n, ok := v["name"].(string); ok {
-				name = n
-			}
-			if i, ok := v["id"].(string); ok {
-				id = i
-			}
-			result = append(result, CourseItem{Name: name, ID: id})
-		default:
-			// 其他格式，保持原样
-			result = append(result, course)
-		}
-	}
-	return result
+    var result []interface{}
+    for _, course := range courses {
+        switch v := course.(type) {
+        case string:
+            // 旧格式：字符串，转换为CourseItem
+            result = append(result, CourseItem{Name: v, ID: ""})
+        case map[interface{}]interface{}:
+            // 新格式：对象，转换为CourseItem
+            name := ""
+            id := ""
+            if n, ok := v["name"].(string); ok {
+                name = n
+            }
+            if i, ok := v["id"].(string); ok {
+                id = i
+            }
+            result = append(result, CourseItem{Name: name, ID: id})
+        case CourseItem:
+            // 如果已经是CourseItem，直接使用
+            result = append(result, v)
+        default:
+            // 尝试处理其他可能的格式
+            if str, ok := course.(string); ok {
+                result = append(result, CourseItem{Name: str, ID: ""})
+            } else {
+                // 无法识别的格式，记录日志或忽略
+                fmt.Printf("无法识别的课程格式: %v\n", course)
+            }
+        }
+    }
+    return result
 }
 
 // CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
