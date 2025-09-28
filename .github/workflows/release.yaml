@@ -91,16 +91,22 @@ jobs:
           del go.sum
           go get -u ./...
           go mod tidy
-
-      # 在 Get dependencies 步骤后，Build 步骤前添加
+          
       - name: Disable Other Platforms
         run: |
-         mv logic/cqie logic/cqie_bak 2>/dev/null || true
-         mv logic/enaea logic/enaea_bak 2>/dev/null || true
-         mv logic/ketangx logic/ketangx_bak 2>/dev/null || true
-         mv logic/welearn logic/welearn_bak 2>/dev/null || true
-         mv logic/xuexitong logic/xuexitong_bak 2>/dev/null || true
-          
+         if [ "$RUNNER_OS" == "Linux" ]; then
+            mv logic/cqie logic/cqie_bak 2>/dev/null || true
+            mv logic/enaea logic/enaea_bak 2>/dev/null || true
+            mv logic/ketangx logic/ketangx_bak 2>/dev/null || true
+            mv logic/welearn logic/welearn_bak 2>/dev/null || true
+            mv logic/xuexitong logic/xuexitong_bak 2>/dev/null || true
+         elif [ "$RUNNER_OS" == "Windows" ]; then
+            ren logic\cqie logic\cqie_bak 2>nul || true
+            ren logic\enaea logic\enaea_bak 2>nul || true
+            ren logic\ketangx logic\ketangx_bak 2>nul || true
+            ren logic\welearn logic\welearn_bak 2>nul || true
+            ren logic\xuexitong logic\xuexitong_bak 2>nul || true
+         fi
 
       - name: Prepare Release Directory #创建压缩目录
         run: mkdir -p ${{ env.RELEASE_DIR }}/yatori-go-console.${{env.VERSION}}-linux-${{matrix.arch}}-release
@@ -147,14 +153,22 @@ jobs:
           Remove-Item -Recurse -Force "yatori-go-console.${{env.VERSION}}-windows-${{matrix.arch}}-release"
           cd ..
 
-      # 在 Create Release zip/tar 步骤后添加
       - name: Restore Other Platforms
         run: |
-          mv logic/cqie_bak logic/cqie 2>/dev/null || true
-          mv logic/enaea_bak logic/enaea 2>/dev/null || true
-          mv logic/ketangx_bak logic/ketangx 2>/dev/null || true
-          mv logic/welearn_bak logic/welearn 2>/dev/null || true
-          mv logic/xuexitong_bak logic/xuexitong 2>/dev/null || true
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+              # Windows 命令
+            if (Test-Path "logic/cqie_bak") { Rename-Item "logic/cqie_bak" "logic/cqie" }
+            if (Test-Path "logic/enaea_bak") { Rename-Item "logic/enaea_bak" "logic/enaea" }
+            if (Test-Path "logic/ketangx_bak") { Rename-Item "logic/ketangx_bak" "logic/ketangx" }
+            if (Test-Path "logic/welearn_bak") { Rename-Item "logic/welearn_bak" "logic/welearn" }
+            if (Test-Path "logic/xuexitong_bak") { Rename-Item "logic/xuexitong_bak" "logic/xuexitong" }
+          else
+            mv logic/cqie_bak logic/cqie 2>/dev/null || true
+            mv logic/enaea_bak logic/enaea 2>/dev/null || true
+            mv logic/ketangx_bak logic/ketangx 2>/dev/null || true
+            mv logic/welearn_bak logic/welearn 2>/dev/null || true
+            mv logic/xuexitong_bak logic/xuexitong 2>/dev/null || true
+          fi
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
