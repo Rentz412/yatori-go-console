@@ -92,22 +92,25 @@ jobs:
           go get -u ./...
           go mod tidy
           
-      - name: Disable Other Platforms
+      - name: Remove Other Platforms (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-         if [ "$RUNNER_OS" == "Linux" ]; then
-            mv logic/cqie logic/cqie_bak 2>/dev/null || true
-            mv logic/enaea logic/enaea_bak 2>/dev/null || true
-            mv logic/ketangx logic/ketangx_bak 2>/dev/null || true
-            mv logic/welearn logic/welearn_bak 2>/dev/null || true
-            mv logic/xuexitong logic/xuexitong_bak 2>/dev/null || true
-         elif [ "$RUNNER_OS" == "Windows" ]; then
-            ren logic\cqie logic\cqie_bak 2>nul || true
-            ren logic\enaea logic\enaea_bak 2>nul || true
-            ren logic\ketangx logic\ketangx_bak 2>nul || true
-            ren logic\welearn logic\welearn_bak 2>nul || true
-            ren logic\xuexitong logic\xuexitong_bak 2>nul || true
-         fi
+          Remove-Item -Recurse -Force "logic/cqie" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "logic/enaea" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "logic/ketangx" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "logic/welearn" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "logic/xuexitong" -ErrorAction SilentlyContinue
 
+      - name: Remove Other Platforms (Linux)
+        if: runner.os == 'Linux'
+        run: |
+            rm -rf logic/cqie
+            rm -rf logic/enaea
+            rm -rf logic/ketangx
+            rm -rf logic/welearn
+            rm -rf logic/xuexitong
+            
       - name: Prepare Release Directory #创建压缩目录
         run: mkdir -p ${{ env.RELEASE_DIR }}/yatori-go-console.${{env.VERSION}}-linux-${{matrix.arch}}-release
 
