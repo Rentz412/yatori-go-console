@@ -168,13 +168,17 @@ func CmpCourse(courseName, courseId string, courseList []interface{}) bool {
                 return true
             }
         case CourseItem:
-            // 新格式：CourseItem，优先按ID匹配
-            if v.ID != "" && v.ID == courseId {
-                return true
-            }
-            // 如果没有配置ID或ID不匹配，则按名称匹配
-            if v.Name == courseName {
-                return true
+            // 新格式：CourseItem
+            // 如果配置中指定了课程ID，则必须完全匹配ID
+            if v.ID != "" {
+                if v.ID == courseId {
+                    return true
+                }
+            } else {
+                // 如果配置中没有指定ID，则按名称匹配
+                if v.Name == courseName {
+                    return true
+                }
             }
         }
     }
