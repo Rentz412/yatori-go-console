@@ -117,21 +117,28 @@ func keepAliveLogin(UserCache *yinghuaApi.YingHuaUserCache) {
 func nodeListStudy(setting config.Setting, user *config.Users, userCache *yinghuaApi.YingHuaUserCache, course *yinghua.YingHuaCourse) {
 	//过滤课程---------------------------------
 	//排除指定课程
-	if len(user.CoursesCustom.ExcludeCourses) != 0 && config.CmpCourse(course.Name, user.CoursesCustom.ExcludeCourses) {
+	if len(user.CoursesCustom.ExcludeCourses) != 0 && config.CmpCourse(course.Name, course.Id, user.CoursesCustom.ExcludeCourses) {
 		nodesLock.Done()
 		return
 	}
 	//包含指定课程
-	if len(user.CoursesCustom.IncludeCourses) != 0 && !config.CmpCourse(course.Name, user.CoursesCustom.IncludeCourses) {
+	if len(user.CoursesCustom.IncludeCourses) != 0 && !config.CmpCourse(course.Name, course.Id, user.CoursesCustom.IncludeCourses) {
 		nodesLock.Done()
 		return
 	}
-	modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", "正在学习课程：", lg.Yellow, " 【"+course.Name+"】 ")
+	
+	// 添加课程ID显示，便于区分相同名称的课程
+	courseDisplayName := course.Name
+	if course.Id != "" {
+		courseDisplayName = fmt.Sprintf("%s [ID:%s]", course.Name, course.Id)
+	}
+	
+	modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", "正在学习课程：", lg.Yellow, " 【"+courseDisplayName+"】 ")
 
 	//如果课程时间未到开课时间则直接return
 	//{"_code":9,"status":false,"msg":"课程还未开始!","result":{}}
 	if time2.Now().Before(course.StartDate) {
-		modelLog.ModelPrint(setting.BasicSetting.LogModel == 0, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", " 【", course.Name, "】 >>> ", lg.Red, "该课程还未开始已自动跳过")
+		modelLog.ModelPrint(setting.BasicSetting.LogModel == 0, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", " 【", courseDisplayName, "】 >>> ", lg.Red, "该课程还未开始已自动跳过")
 		nodesLock.Done()
 		return
 	}
@@ -159,12 +166,12 @@ func nodeListStudy(setting config.Setting, user *config.Users, userCache *yinghu
 
 		action, err := yinghua.CourseDetailAction(userCache, course.Id)
 		if err != nil {
-			lg.Print(lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Default, " 【"+course.Name+"】 ", lg.Red, "拉取课程进度失败", err.Error())
+			lg.Print(lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Default, " 【"+courseDisplayName+"】 ", lg.Red, "拉取课程进度失败", err.Error())
 			break
 		}
-		modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Default, " 【"+course.Name+"】 ", "视频学习进度：", strconv.Itoa(action.VideoLearned), "/", strconv.Itoa(action.VideoCount), " ", "课程总学习进度：", fmt.Sprintf("%.2f", action.Progress*100), "%")
+		modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Default, " 【"+courseDisplayName+"】 ", "视频学习进度：", strconv.Itoa(action.VideoLearned), "/", strconv.Itoa(action.VideoCount), " ", "课程总学习进度：", fmt.Sprintf("%.2f", action.Progress*100), "%")
 	}
-	modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Green, "课程", " 【"+course.Name+"】 ", "学习完毕")
+	modelLog.ModelPrint(setting.BasicSetting.LogModel == 1, lg.INFO, "[", lg.Green, userCache.Account, lg.Default, "] ", lg.Green, "课程", " 【"+courseDisplayName+"】 ", "学习完毕")
 	nodesLock.Done()
 }
 
