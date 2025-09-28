@@ -156,23 +156,6 @@ jobs:
           Remove-Item -Recurse -Force "yatori-go-console.${{env.VERSION}}-windows-${{matrix.arch}}-release"
           cd ..
 
-      - name: Restore Other Platforms
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-              # Windows 命令
-            if (Test-Path "logic/cqie_bak") { Rename-Item "logic/cqie_bak" "logic/cqie" }
-            if (Test-Path "logic/enaea_bak") { Rename-Item "logic/enaea_bak" "logic/enaea" }
-            if (Test-Path "logic/ketangx_bak") { Rename-Item "logic/ketangx_bak" "logic/ketangx" }
-            if (Test-Path "logic/welearn_bak") { Rename-Item "logic/welearn_bak" "logic/welearn" }
-            if (Test-Path "logic/xuexitong_bak") { Rename-Item "logic/xuexitong_bak" "logic/xuexitong" }
-          else
-            mv logic/cqie_bak logic/cqie 2>/dev/null || true
-            mv logic/enaea_bak logic/enaea 2>/dev/null || true
-            mv logic/ketangx_bak logic/ketangx 2>/dev/null || true
-            mv logic/welearn_bak logic/welearn 2>/dev/null || true
-            mv logic/xuexitong_bak logic/xuexitong 2>/dev/null || true
-          fi
-
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         env:
