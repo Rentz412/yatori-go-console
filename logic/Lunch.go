@@ -47,20 +47,21 @@ func Lunch() {
 		examAutoSubmit := config.GetUserInput("考完试是否自动提交试卷? (0-否, 1-是): ")
 		includeCourses := config.GetUserInput("请输入需要包含的课程名称，多个用(英文逗号)分隔(可留空): ")
 		excludeCourses := config.GetUserInput("请输入需要排除的课程名称，多个用(英文逗号)分隔(可留空): ")
-
-		cleanStringSlice := func(s string) []string {
-			if s == "" {
-				return []string{}
-			}
-			parts := strings.Split(s, ",")
-			var result []string
-			for _, part := range parts {
-				trimmed := strings.TrimSpace(part)
-				if trimmed != "" {
-					result = append(result, trimmed)
-				}
-			}
-			return result
+		
+		cleanStringSlice := func(s string) []interface{} {
+    		if s == "" {
+        		return []interface{}{}
+    		}
+    		parts := strings.Split(s, ",")
+   	 		var result []interface{}
+    		for _, part := range parts {
+       		 	trimmed := strings.TrimSpace(part)
+        		if trimmed != "" {
+           		 	courseItem := config.CourseItem{Name: trimmed, ID: ""}
+            		result = append(result, courseItem)
+        		}
+    		}
+    		return result
 		}
 
 		user := config.Users{
