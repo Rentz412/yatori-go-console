@@ -160,28 +160,34 @@ func convertCourseFormat(courses []interface{}) []interface{} {
 // CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
 // 修改为支持课程ID和名称的匹配
 func CmpCourse(courseName, courseId string, courseList []interface{}) bool {
-    for _, item := range courseList {
+    lg.Print(lg.DEBUG, "开始匹配课程: 名称=", courseName, ", ID=", courseId)
+    
+    for i, item := range courseList {
         switch v := item.(type) {
         case string:
-            // 旧格式：字符串，按名称匹配
+            lg.Print(lg.DEBUG, "  配置项[", i, "](字符串): ", v)
             if v == courseName {
+                lg.Print(lg.DEBUG, "  匹配成功 (字符串)")
                 return true
             }
-        case CourseItem:
-            // 新格式：CourseItem
+        case config.CourseItem:
+            lg.Print(lg.DEBUG, "  配置项[", i, "](CourseItem): 名称=", v.Name, ", ID=", v.ID)
             // 如果配置中指定了课程ID，则必须完全匹配ID
             if v.ID != "" {
                 if v.ID == courseId {
+                    lg.Print(lg.DEBUG, "  匹配成功 (ID匹配)")
                     return true
                 }
             } else {
                 // 如果配置中没有指定ID，则按名称匹配
                 if v.Name == courseName {
+                    lg.Print(lg.DEBUG, "  匹配成功 (名称匹配)")
                     return true
                 }
             }
         }
     }
+    lg.Print(lg.DEBUG, "  没有匹配项")
     return false
 }
 
