@@ -93,45 +93,63 @@ func ReadJsonConfig(filePath string) JSONDataForConfig {
 }
 
 // 自动识别读取配置文件
+// 自动识别读取配置文件
 func ReadConfig(filePath string) JSONDataForConfig {
-	var configJson JSONDataForConfig
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log2.Print(log2.INFO, log2.BoldRed, "找不到配置文件或配置文件内容书写错误")
-		log.Fatal(err)
-	}
-	err = viper.Unmarshal(&configJson)
-	//viper.SetTypeByDefaultValue(true)
-	viper.SetDefault("setting.basicSetting.logModel", 5)
+    var configJson JSONDataForConfig
+    viper.SetConfigName("config")
+    viper.SetConfigType("yaml")
+    viper.AddConfigPath("./")
+    err := viper.ReadInConfig()
+    if err != nil {
+        log2.Print(log2.INFO, log2.BoldRed, "找不到配置文件或配置文件内容书写错误")
+        log.Fatal(err)
+    }
+    err = viper.Unmarshal(&configJson)
+    viper.SetDefault("setting.basicSetting.logModel", 5)
 
-	if err != nil {
-		log2.Print(log2.INFO, log2.BoldRed, "配置文件读取失败，请检查配置文件填写是否正确")
-		log.Fatal(err)
-	}
-	
-	// 转换课程配置格式
-	for i := range configJson.Users {
-		user := &configJson.Users[i]
-		user.CoursesCustom.IncludeCourses = convertCourseFormat(user.CoursesCustom.IncludeCourses)
-		user.CoursesCustom.ExcludeCourses = convertCourseFormat(user.CoursesCustom.ExcludeCourses)
-	}
-	
-	return configJson
+    if err != nil {
+        log2.Print(log2.INFO, log2.BoldRed, "配置文件读取失败，请检查配置文件填写是否正确")
+        log.Fatal(err)
+    }
+    
+    log.Printf("原始解析的配置: %+v", configJson)
+    
+    // 转换课程配置格式
+    for i := range configJson.Users {
+        user := &configJson.Users[i]
+        log.Printf("处理用户[%d]: %s", i, user.Account)
+        log.Printf("  原始IncludeCourses: %v", user.CoursesCustom.IncludeCourses)
+        log.Printf("  原始ExcludeCourses: %v", user.CoursesCustom.ExcludeCourses)
+        
+        user.CoursesCustom.IncludeCourses = convertCourseFormat(user.CoursesCustom.IncludeCourses)
+        user.CoursesCustom.ExcludeCourses = convertCourseFormat(user.CoursesCustom.ExcludeCourses)
+        
+        log.Printf("  转换后IncludeCourses: %v", user.CoursesCustom.IncludeCourses)
+        log.Printf("  转换后ExcludeCourses: %v", user.CoursesCustom.ExcludeCourses)
+    }
+    
+    return configJson
 }
 
 // 转换课程配置格式，将字符串数组转换为CourseItem数组
+// 转换课程配置格式，将字符串数组转换为CourseItem数组
 func convertCourseFormat(courses []interface{}) []interface{} {
     var result []interface{}
-    for _, course := range courses {
+    
+    // 使用标准库的log输出，因为此时日志系统可能还未初始化
+    log.Printf("开始转换课程配置，输入: %v (类型: %T)", courses, courses)
+    
+    for i, course := range courses {
+        log.Printf("处理课程项[%d]: %v (类型: %T)", i, course, course)
+        
         switch v := course.(type) {
         case string:
             // 旧格式：字符串，转换为CourseItem
+            log.Printf("  识别为字符串格式: %s", v)
             result = append(result, CourseItem{Name: v, ID: ""})
         case map[interface{}]interface{}:
             // 新格式：对象，转换为CourseItem
+            log.Printf("  识别为map[interface{}]interface{}格式: %v", v)
             name := ""
             id := ""
             if n, ok := v["name"].(string); ok {
@@ -140,54 +158,90 @@ func convertCourseFormat(courses []interface{}) []interface{} {
             if i, ok := v["id"].(string); ok {
                 id = i
             }
+            log.Printf("  提取信息: 名称=%s, ID=%s", name, id)
+            result = append(result, CourseItem{Name: name, ID: id})
+        case map[string]interface{}:
+            // 新格式：对象，转换为CourseItem
+            log.Printf("  识别为map[string]interface{}格式: %v", v)
+            name := ""
+            id := ""
+            if n, ok := v["name"]; ok {
+                name = fmt.Sprintf("%v", n)
+            }
+            if i, ok := v["id"]; ok {
+                id = fmt.Sprintf("%v", i)
+            }
+            log.Printf("  提取信息: 名称=%s, ID=%s", name, id)
             result = append(result, CourseItem{Name: name, ID: id})
         case CourseItem:
             // 如果已经是CourseItem，直接使用
+            log.Printf("  已经是CourseItem格式: 名称=%s, ID=%s", v.Name, v.ID)
             result = append(result, v)
         default:
             // 尝试处理其他可能的格式
+            log.Printf("  无法识别的格式，尝试转换")
             if str, ok := course.(string); ok {
+                log.Printf("  成功转换为字符串: %s", str)
                 result = append(result, CourseItem{Name: str, ID: ""})
             } else {
-                // 无法识别的格式，记录日志或忽略
-                fmt.Printf("无法识别的课程格式: %v\n", course)
+                // 最后尝试，使用fmt.Sprintf转换为字符串
+                log.Printf("  使用fmt.Sprintf转换: %v", course)
+                result = append(result, CourseItem{Name: fmt.Sprintf("%v", course), ID: ""})
             }
         }
     }
+    
+    log.Printf("转换课程配置完成，输出: %v", result)
+    for i, item := range result {
+        if courseItem, ok := item.(CourseItem); ok {
+            log.Printf("  输出项[%d]: 名称=%s, ID=%s", i, courseItem.Name, courseItem.ID)
+        } else {
+            log.Printf("  输出项[%d]: %v (类型: %T)", i, item, item)
+        }
+    }
+    
     return result
 }
 
 // CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
 // 修改为支持课程ID和名称的匹配
+// CmpCourse 比较是否存在对应课程,匹配上了则true，没有匹配上则是false
 func CmpCourse(courseName, courseId string, courseList []interface{}) bool {
-    lg.Print(lg.DEBUG, "开始匹配课程: 名称=", courseName, ", ID=", courseId)
+    log.Printf("开始匹配课程: 名称=%s, ID=%s", courseName, courseId)
+    log.Printf("配置列表: %v", courseList)
     
     for i, item := range courseList {
         switch v := item.(type) {
         case string:
-            lg.Print(lg.DEBUG, "  配置项[", i, "](字符串): ", v)
+            log.Printf("  配置项[%d](字符串): %s", i, v)
             if v == courseName {
-                lg.Print(lg.DEBUG, "  匹配成功 (字符串)")
+                log.Printf("  匹配成功 (字符串)")
                 return true
             }
-        case config.CourseItem:
-            lg.Print(lg.DEBUG, "  配置项[", i, "](CourseItem): 名称=", v.Name, ", ID=", v.ID)
+        case CourseItem:
+            log.Printf("  配置项[%d](CourseItem): 名称=%s, ID=%s", i, v.Name, v.ID)
             // 如果配置中指定了课程ID，则必须完全匹配ID
             if v.ID != "" {
                 if v.ID == courseId {
-                    lg.Print(lg.DEBUG, "  匹配成功 (ID匹配)")
+                    log.Printf("  匹配成功 (ID匹配)")
                     return true
+                } else {
+                    log.Printf("  ID不匹配: 配置ID=%s, 课程ID=%s", v.ID, courseId)
                 }
             } else {
                 // 如果配置中没有指定ID，则按名称匹配
                 if v.Name == courseName {
-                    lg.Print(lg.DEBUG, "  匹配成功 (名称匹配)")
+                    log.Printf("  匹配成功 (名称匹配)")
                     return true
+                } else {
+                    log.Printf("  名称不匹配: 配置名称=%s, 课程名称=%s", v.Name, courseName)
                 }
             }
+        default:
+            log.Printf("  配置项[%d]未知类型: %v (类型: %T)", i, item, item)
         }
     }
-    lg.Print(lg.DEBUG, "  没有匹配项")
+    log.Printf("  没有匹配项")
     return false
 }
 
