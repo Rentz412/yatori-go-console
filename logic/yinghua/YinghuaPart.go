@@ -115,17 +115,25 @@ func keepAliveLogin(UserCache *yinghuaApi.YingHuaUserCache) {
 
 // 章节节点的抽离函数
 func nodeListStudy(setting config.Setting, user *config.Users, userCache *yinghuaApi.YingHuaUserCache, course *yinghua.YingHuaCourse) {
-	//过滤课程---------------------------------
-	//排除指定课程
-	if len(user.CoursesCustom.ExcludeCourses) != 0 && config.CmpCourse(course.Name, course.Id, user.CoursesCustom.ExcludeCourses) {
-		nodesLock.Done()
-		return
-	}
-	//包含指定课程
-	if len(user.CoursesCustom.IncludeCourses) != 0 && !config.CmpCourse(course.Name, course.Id, user.CoursesCustom.IncludeCourses) {
-		nodesLock.Done()
-		return
-	}
+    // 添加调试信息
+    lg.Print(lg.DEBUG, "[", lg.Green, userCache.Account, lg.Default, "] ", "检查课程: ", course.Name, " (ID: ", course.Id, ")")
+    
+    //过滤课程---------------------------------
+    //排除指定课程
+    if len(user.CoursesCustom.ExcludeCourses) != 0 && config.CmpCourse(course.Name, course.Id, user.CoursesCustom.ExcludeCourses) {
+        lg.Print(lg.DEBUG, "[", lg.Green, userCache.Account, lg.Default, "] ", "课程被排除: ", course.Name)
+        nodesLock.Done()
+        return
+    }
+    //包含指定课程
+    if len(user.CoursesCustom.IncludeCourses) != 0 && !config.CmpCourse(course.Name, course.Id, user.CoursesCustom.IncludeCourses) {
+        lg.Print(lg.DEBUG, "[", lg.Green, userCache.Account, lg.Default, "] ", "课程不在包含列表中: ", course.Name)
+        nodesLock.Done()
+        return
+    }
+    
+    // 其余代码保持不变...
+}
 	
 	// 添加课程ID显示，便于区分相同名称的课程
 	courseDisplayName := course.Name
